@@ -24,9 +24,11 @@ def custom_sigmoid_derivative(x, alpha=20):
     sig = custom_sigmoid(x, alpha)
     return alpha * sig * (1 - sig)
 
-def forward_propagation(input_data, biases, thresholds, output_layer_nodes,input_layer_nodes):
+def forward_propagation(input_data, biases, thresholds, layers):
     N = input_data.shape[1]  # Number of features
-    Z = np.zeros((input_data.shape[0], output_layer_nodes))
+
+    output_layer_nodes = layers[-1]
+    input_layer_nodes = layers[0]
 
     # Define Zo based on the number of output nodes
     if input_layer_nodes == 2:
@@ -38,20 +40,35 @@ def forward_propagation(input_data, biases, thresholds, output_layer_nodes,input
     else:  # Assuming that for 5 or more nodes, we use the same scaling factor
         Zo = 0.2
 
+    Z = np.zeros((input_data.shape[0], output_layer_nodes))
+
     # Compute Z for each sample
     for i in range(input_data.shape[0]):  # Loop through samples
-        print("loop no:",i)
-        # Apply custom sigmoid to each bias and subtract the threshold for each feature
-        sum_i = np.sum(custom_sigmoid(2 * biases - 1) * (input_data[i] - thresholds))
-        print("sum_i",sum_i)
-        print("N",N)
-        print("output_layer_nodes",output_layer_nodes)
-        # Calculate Z based on the provided formula
-        Z[i] = Zo * (sum_i - N + output_layer_nodes)
-        print("value of Zo for this iteration is:",Zo)
-        print(f"value of i is: {i}, the value for Z: {Z[i]}")
-
-    return Z,Zo
+        print("loop no:", i)
+        A = input_data[i]  # Initialize activation for input layer
+        
+        for layer in range(len(layers) - 1):
+            bias_variable_name = f'b_{layer}_{layer+1}'
+            threshold_variable_name = f'T_{layer}_{layer+1}'
+            
+            bias = biases[bias_variable_name]
+            threshold = thresholds[threshold_variable_name]
+            
+            # Apply custom sigmoid to each bias and subtract the threshold for each feature
+            sum_i = np.sum(custom_sigmoid(2 * bias - 1) * (A - threshold))
+            print("sum_i", sum_i)
+            print("N", N)
+            print("output_layer_nodes", output_layer_nodes)
+            
+            # Calculate Z based on the provided formula
+            Z[i] = Zo * (sum_i - N + output_layer_nodes)
+            print("value of Zo for this iteration is:", Zo)
+            print(f"value of i is: {i}, the value for Z: {Z[i]}")
+            
+            # Update activation for next layer
+            A = custom_sigmoid(sum_i)
+            
+    return Z, Zo
 
 def relu(x):
     return np.maximum(0, x)
@@ -148,6 +165,11 @@ def main():
     # Print generated biases and thresholds for verification
     print("Generated biases:", biases)
     print("Generated thresholds:", thresholds)
+
+    # Forward propagation
+    output, Zo = forward_propagation(X, biases, thresholds, layers)
+    print("Output:", output)
+
 
 if __name__ == "__main__":
     main()
