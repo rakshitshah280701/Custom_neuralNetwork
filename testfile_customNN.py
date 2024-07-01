@@ -53,6 +53,12 @@ def forward_propagation(input_data, biases, thresholds, layers):
             
             bias = biases[bias_variable_name]
             threshold = thresholds[threshold_variable_name]
+
+            # Ensure A is reshaped to match the size of the current layer
+            print("A before shape config:", A)
+            if A.shape[0] != threshold.shape[0]:
+                A = np.tile(A, (threshold.shape[0], 1)).T[0]
+                print("A after shape config:",A)
             
             # Apply custom sigmoid to each bias and subtract the threshold for each feature
             sum_i = np.sum(custom_sigmoid(2 * bias - 1) * (A - threshold))
@@ -65,8 +71,8 @@ def forward_propagation(input_data, biases, thresholds, layers):
             print("value of Zo for this iteration is:", Zo)
             print(f"value of i is: {i}, the value for Z: {Z[i]}")
             
-            # Update activation for next layer
-            A = custom_sigmoid(sum_i)
+            # applying Relu for next layer
+            A = relu(Z[i])
             
     return Z, Zo
 
