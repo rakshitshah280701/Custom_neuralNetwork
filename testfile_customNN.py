@@ -67,12 +67,13 @@ def forward_propagation(input_data, biases, thresholds, layers):
             print("output_layer_nodes", output_layer_nodes)
             
             # Calculate Z based on the provided formula
-            Z[i] = Zo * (sum_i - N + output_layer_nodes)
+            intermediate_value = Zo * (sum_i - N + output_layer_nodes)
             print("value of Zo for this iteration is:", Zo)
             print(f"value of i is: {i}, the value for Z: {Z[i]}")
             
             # applying Relu for next layer
-            A = relu(Z[i])
+            Z[i] = relu(intermediate_value)
+            A = Z[i]
             
     return Z, Zo
 
@@ -129,15 +130,15 @@ def calculate_delta_bias(Y, T, Z, Theta):
 
 
 
-X = np.array([[0, 0],
-              [0, 1],
-              [1, 0],
-              [1, 1]])
+# X = np.array([[0, 0],
+#               [0, 1],
+#               [1, 0],
+#               [1, 1]])
 
-y = np.array([[0],
-              [0],
-              [0],
-              [1]])
+# y = np.array([[0],
+#               [0],
+#               [0],
+#               [1]])
 
 def main():
     # User input for the number of hidden layers and nodes in each hidden layer
@@ -175,6 +176,7 @@ def main():
     # Forward propagation
     output, Zo = forward_propagation(X, biases, thresholds, layers)
     print("Output:", output)
+    
 
 
 if __name__ == "__main__":
