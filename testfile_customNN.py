@@ -8,8 +8,11 @@ def generate_and_assign_biases_thresholds(layers):
         bias_variable_name = f'b_{i}_{i+1}'
         threshold_variable_name = f'T_{i}_{i+1}'
         
-        bias_value = np.random.uniform(0.1, 0.9, size=layers[i+1])
-        threshold_value = np.random.uniform(0.1, 0.9, size=layers[i+1])
+        print(f"Enter bias values for layer {i+1} to layer {i+2} (comma separated):")
+        bias_value = np.array([float(x) for x in input().split(',')])
+        
+        print(f"Enter threshold values for layer {i+1} to layer {i+2} (comma separated):")
+        threshold_value = np.array([float(x) for x in input().split(',')])
         
         biases[bias_variable_name] = bias_value
         thresholds[threshold_variable_name] = threshold_value
@@ -172,6 +175,75 @@ def main():
     # Print generated biases and thresholds for verification
     print("Generated biases:", biases)
     print("Generated thresholds:", thresholds)
+
+    epochs = 5
+
+    for epoch in range(epochs):
+        # Forward propagation
+        Zh, Zo_h = forward_propagation(X, biases, thresholds, [n_input_nodes] + [hidden_layers[0]])
+        Yh = relu(Zh)
+        print(f"Epoch {epoch+1}, Yh: {Yh}")
+        
+        Z0, Zo_0 = forward_propagation(Yh, biases, thresholds, [hidden_layers[0]] + [n_output_nodes])
+        Y0 = relu(Z0)
+        print(f"Epoch {epoch+1}, Z0: {Z0}")
+        print(f"Epoch {epoch+1}, Y0: {Y0}")
+        print(f"Epoch {epoch+1}, y: {y}")
+
+        E = calculate_error(y, Y0)
+
+        # Backpropagation
+        theta_ho = calculate_theta(Yh, biases[f'b_{1}_{2}'], thresholds[f'T_{1}_{2}'], Zo_0)
+        print(f"Epoch {epoch+1}, theta_ho: {theta_ho}")
+
+        beta_ho = calculate_beta(Yh, biases[f'b_{1}_{2}'], thresholds[f'T_{1}_{2}'], Zo_0)
+        print(f"Epoch {epoch+1}, beta_ho: {beta_ho}")
+
+        delta_threshold_ho = calculate_delta_threshold(Y0, y, Z0, beta_ho)
+        print(f"Epoch {epoch+1}, delta_threshold_ho: {delta_threshold_ho}")
+
+        delta_bias_ho = calculate_delta_bias(Y0, y, Z0, theta_ho)
+        print(f"Epoch {epoch+1}, delta_bias_ho: {delta_bias_ho}")
+
+        # Update thresholds and biases for output layer
+        thresholds[f'T_{1}_{2}'] -= delta_threshold_ho.mean(axis=0)
+        print(f"Epoch {epoch+1}, T_{1}_{2}: {thresholds[f'T_{1}_{2}']}")
+
+        biases[f'b_{1}_{2}'] -= delta_bias_ho.mean(axis=0)
+        print(f"Epoch {epoch+1}, b_{1}_{2}: {biases[f'b_{1}_{2}']}")
+
+        beta_ih = calculate_beta(X, biases[f'b_{0}_{1}'], thresholds[f'T_{0}_{1}'], Zo_h)
+        print(f"Epoch {epoch+1}, beta_ih: {beta_ih}")
+
+        theta_ih = calculate_theta(X, biases[f'b_{0}_{1}'], thresholds[f'T_{0}_{1}'], Zo_h)
+        print(f"Epoch {epoch+1}, theta_ih: {theta_ih}")
+
+        sum_Delta_T_output = np.sum(delta_threshold_ho, axis=1, keepdims=True)
+        delta_threshold_ih = beta_ih * sum_Delta_T_output
+        print(f"Epoch {epoch+1}, delta_threshold_ih: {delta_threshold_ih}")
+
+        delta_bias_ih = -(theta_ih) * sum_Delta_T_output
+        print(f"Epoch {epoch+1}, delta_bias_ih: {delta_bias_ih}")
+
+        # Update thresholds and biases for hidden layer
+        thresholds[f'T_{0}_{1}'] -= delta_threshold_ih.mean(axis=0)
+        print(f"Epoch {epoch+1}, T_{0}_{1}: {thresholds[f'T_{0}_{1}']}")
+
+        biases[f'b_{0}_{1}'] -= delta_bias_ih.mean(axis=0)
+        print(f"Epoch {epoch+1}, b_{0}_{1}: {biases[f'b_{0}_{1}']}")
+
+        print(f'Epoch {epoch + 1}/{epochs}, Loss: {E}')
+
+    # After training, predict using the final model parameters
+    Y_pred3, Z2 = forward_propagation(X, biases, thresholds, layers)
+    Y_pred4 = relu(Y_pred3)  # Activation for output layer
+
+    # Assuming the prediction and actual values are both binary for classification
+    predicted_classes = Y_pred4 > 0.5
+    true_classes = y > 0.5
+    print("true_classes", true_classes)
+    accuracy = np.mean(predicted_classes == true_classes)
+    print(f'Model accuracy: {accuracy*100}%')
 
     # Forward propagation
     output, Zo = forward_propagation(X, biases, thresholds, layers)
