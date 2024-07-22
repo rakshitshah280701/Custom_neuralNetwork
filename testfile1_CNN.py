@@ -35,6 +35,12 @@ def custom_sigmoid_derivative(x, alpha=20):
 def relu(x):
     return np.maximum(0, x)
 
+def leaky_relu(x, alpha=0.01):
+    return np.where(x > 0, x, alpha * x)
+
+def calculate_error(Y, T):
+    return 0.5 * np.sum((Y - T) ** 2)
+
 def forward_propagation(input_data, biases, thresholds, layers):
     N = input_data.shape[1]  # Number of features
 
@@ -56,7 +62,7 @@ def forward_propagation(input_data, biases, thresholds, layers):
     # Compute Z for each sample
     for i in range(input_data.shape[0]):  # Loop through samples
         print("loop no:", i)
-        A = input_data[i]  # Initialize activation for input layer
+        A = input_data[i].reshape(-1,1)  # Initialize activation for input layer
         
         for layer in range(len(layers) - 1):
             bias_variable_name = f'b_{layer}_{layer+1}'
@@ -72,19 +78,23 @@ def forward_propagation(input_data, biases, thresholds, layers):
             #     print("A after shape config:",A)
             
             # Apply custom sigmoid to each bias and subtract the threshold for each feature
-            sum_i = np.sum(custom_sigmoid(2 * bias - 1) * (A - threshold))
+            weighted_sum_i = np.sum(custom_sigmoid(2 * bias - 1) * (A - threshold))
+            print(f"weighted_sum for layer {layer}: {weighted_sum_i}")
+            sum_i = np.sum(weighted_sum_i, axis=0)
             print("sum_i", sum_i)
             print("N", N)
             print("output_layer_nodes", output_layer_nodes)
             
             # Calculate Z based on the provided formula
             intermediate_value = Zo * (sum_i - N + output_layer_nodes)
-            print("value of Zo for this iteration is:", Zo)
-            print(f"value of i is: {i}, the value for Z: {Z[i]}")
+            print("intermediate_value", intermediate_value)
             
             # applying Relu for next layer
-            Z[i] = relu(intermediate_value)
-            A = Z[i]
+            A = relu(intermediate_value)
+            print(f"A after relu: {A}")
+
+        Z[i] = A  # Final output for sample i
+        print(f"Final output Z[{i}]: {Z[i]}")  
             
     return Z, Zo
 
@@ -109,6 +119,16 @@ def main():
     
     print("Generated biases:", biases)
     print("Generated thresholds:", thresholds)
+
+    epochs = 5
+    learning_rate = 0.01
+
+    for epoch in range(epochs):
+        Y_pred, Zo = forward_propagation(X, biases, thresholds, layers)
+        error = calculate_error(Y_pred, y)
+        print(f"Epoch {epoch + 1}, Error: {error}")
+
+    print("Output:", Y_pred)
 
     # epochs = 5
 
@@ -149,8 +169,8 @@ def main():
 
     #     print(f'Epoch {epoch + 1}/{epochs}, Loss: {E}')
 
-    Y_pred, Z2 = forward_propagation(X, biases, thresholds, layers)
-    Y_pred1 = relu(Y_pred)
+    # Y_pred, Z2 = forward_propagation(X, biases, thresholds, layers)
+    
     
     # predicted_classes = Y_pred1 > 0.5
     # true_classes = y > 0.5
@@ -159,7 +179,7 @@ def main():
     # print(f'Model accuracy: {accuracy*100}%')
 
     # output, Zo = forward_propagation(X, biases, thresholds, layers)
-    print("Output:", Y_pred1)
+    # print("Output:", Y_pred)
 
 if __name__ == "__main__":
     main()
