@@ -8,15 +8,16 @@ def generate_and_assign_biases_thresholds(layers):
         bias_variable_name = f'b_{i}_{i+1}'
         threshold_variable_name = f'T_{i}_{i+1}'
 
-        # Number of nodes in the current and next layers
+        # Number of connections from current layer to next layer
         current_layer_nodes = layers[i]
         next_layer_nodes = layers[i+1]
+        num_connections = current_layer_nodes * next_layer_nodes
         
-        print(f"Enter {current_layer_nodes} bias values for layer {i+1} to layer {i+2} (comma separated):")
-        bias_value = np.array([float(x) for x in input().split(',')])
+        print(f"Enter {num_connections} bias values for connections from layer {i+1} to layer {i+2} (comma separated):")
+        bias_value = np.array([float(x) for x in input().split(',')]).reshape(current_layer_nodes, next_layer_nodes)
         
-        print(f"Enter {current_layer_nodes} threshold values for layer {i+1} to layer {i+2} (comma separated):")
-        threshold_value = np.array([float(x) for x in input().split(',')])
+        print(f"Enter {num_connections} threshold values for connections from layer {i+1} to layer {i+2} (comma separated):")
+        threshold_value = np.array([float(x) for x in input().split(',')]).reshape(current_layer_nodes, next_layer_nodes)
         
         biases[bias_variable_name] = bias_value
         thresholds[threshold_variable_name] = threshold_value
@@ -160,7 +161,7 @@ def main():
     y = np.array([[0], [0], [0], [1]])
     
     n_input_nodes = X.shape[1]
-    n_output_nodes = 2
+    n_output_nodes = y.shape[1]
     
     layers = [n_input_nodes] + hidden_layers + [n_output_nodes]
     
