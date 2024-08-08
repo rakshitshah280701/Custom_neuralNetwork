@@ -98,6 +98,41 @@ def forward_propagation(input_data, biases, thresholds, layers):
             
     return Z, Zo
 
+def calculate_beta(input_data, bias, threshold, Zo):
+    beta_values = np.zeros(input_data.shape)
+    for i in range(input_data.shape[0]):
+        for k in range(input_data.shape[1]):
+            z = 2 * bias[k] - 1
+            sigmoid_input = z * (input_data[i, k] - threshold[k])
+            g_prime = custom_sigmoid_derivative(sigmoid_input)
+            beta_values[i, k] = Zo * g_prime * z
+    return beta_values
+
+def calculate_delta_threshold(Y, T, Z, Beta):
+    Delta_T = np.where(Z > 0, (T - Y) * Beta, 0)
+    return Delta_T
+
+def calculate_theta(input_data, bias, threshold, Zo):
+    if len(input_data.shape) == 1:
+        input_data = np.expand_dims(input_data, axis=-1)
+
+    if input_data.shape[1] != len(bias):
+        input_data = np.tile(input_data, (1, len(bias)))
+
+    theta_values = np.zeros((input_data.shape[0], len(bias)))
+    for i in range(input_data.shape[0]):
+        for k in range(len(bias)):
+            z = 2 * bias[k] - 1
+            sigmoid_input = z * (input_data[i, k] - threshold[k])
+            g_prime = custom_sigmoid_derivative(sigmoid_input)
+            theta_values[i, k] = Zo * g_prime * 2 * (input_data[i, k] - threshold[k])
+    return theta_values
+
+def calculate_delta_bias(Y, T, Z, Theta):
+    Delta_B = np.where(Z > 0, (Y - T) * Theta, 0)
+    return Delta_B
+
+
 def main():
     num_hidden_layers = int(input("Enter the number of hidden layers: "))
     hidden_layers = []
@@ -121,12 +156,33 @@ def main():
     print("Generated thresholds:", thresholds)
 
     epochs = 5
-    learning_rate = 0.01
+    
 
     for epoch in range(epochs):
         Y_pred, Zo = forward_propagation(X, biases, thresholds, layers)
         error = calculate_error(Y_pred, y)
         print(f"Epoch {epoch + 1}, Error: {error}")
+
+        for layer in range(len(layers) - 2, -1, -1):
+            bias_variable_name = f'b_{layer}_{layer+1}'
+            threshold_variable_name = f'T_{layer}_{layer+1}'
+            
+            if layer == len(layers) - 2:
+                Z = Y_pred
+                Theta = calculate_theta(Z, biases[bias_variable_name], thresholds[threshold_variable_name], Zo)
+                Beta = calculate_beta(Z, biases[bias_variable_name], thresholds[threshold_variable_name], Zo)
+            else:
+                Z, Zo = forward_propagation(X, biases, thresholds, layers[:layer+2])
+                Theta = calculate_theta(Z, biases[bias_variable_name], thresholds[threshold_variable_name], Zo)
+                Beta = calculate_beta(Z, biases[bias_variable_name], thresholds[threshold_variable_name], Zo)
+
+            delta_threshold = calculate_delta_threshold(Y_pred, y, Z, Beta)
+            delta_bias = calculate_delta_bias(Y_pred, y, Z, Theta)
+
+            biases[bias_variable_name] -= delta_bias.mean(axis=0).reshape(biases[bias_variable_name].shape)
+            thresholds[threshold_variable_name] -= delta_threshold.mean(axis=0).reshape(thresholds[threshold_variable_name].shape)
+
+
 
     print("Output:", Y_pred)
 
